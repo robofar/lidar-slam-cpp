@@ -79,6 +79,7 @@ void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
     }
 }
 
-void lo::Config::TestFcn() const {
-    std::cout << "testing whether linking is neccessary" << std::endl;
+// const declaration is needed in both - prototype (.hpp) and implementation (.cpp)
+void lo::Config::ConstFuncTest() const {
+    std::cout << "testing const function" << std::endl;
 }

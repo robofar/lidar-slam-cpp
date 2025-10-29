@@ -87,7 +87,7 @@ class Config {
 
     // Methods
     void FromFile(const std::filesystem::path& yaml_file);
-    void TestFcn() const;
+    void ConstFuncTest() const;
 };
 
 }  // namespace lo
