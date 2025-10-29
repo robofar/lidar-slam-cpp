@@ -4,7 +4,7 @@ setting:
   data_loader_seq: "00"
 
   output_root: "./experiments"
-  data_path: "/media/faris/1B6B-12E9/data_odometry_velodyne/dataset/"
+  data_path: "/media/faris/1B6B-12E9/KITTI/data_odometry_velodyne/dataset/"
   #data_path: "/home/faris/Desktop/SLAM/lidar-slam/data/kitti_example/"
 
   kitti_correction_on: True

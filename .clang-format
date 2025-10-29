@@ -1,0 +1,16 @@
+BasedOnStyle: Google
+Language: Cpp
+
+# Small optional tweaks (safe for Google style)
+PointerAlignment: Left
+DerivePointerAlignment: false
+Standard: c++17
+SortIncludes: true
+BinPackParameters: false
+ColumnLimit: 150
+IndentWidth: 4                # Google standard
+TabWidth: 2
+UseTab: Never
+AllowShortFunctionsOnASingleLine: Inline
+AccessModifierOffset: -2
+FixNamespaceComments: true

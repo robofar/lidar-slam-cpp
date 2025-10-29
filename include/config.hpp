@@ -1,27 +1,26 @@
-#include <string>
 #include <filesystem>
+#include <string>
 
 namespace lo {
 
 class Config {
-
-public:
+  public:
     ////////////////////// settings
-    std::string name = "lidar_slam";   // experiment name
-    std::string run_name = name;           // may include timestamp later
+    std::string name = "lidar_slam";  // experiment name
+    std::string run_name = name;      // may include timestamp later
     bool use_dataloader = true;
     std::string data_loader_name;
     std::string data_loader_seq;
     std::string experiment_name;
 
-    std::string run_path;                    
+    std::string run_path;
     std::filesystem::path output_root = "./experiments";
     std::filesystem::path data_path = "./data/kitti_example/";
-    std::filesystem::path pc_path;              
-    std::filesystem::path pose_path;           
+    std::filesystem::path pc_path;
+    std::filesystem::path pose_path;
     std::filesystem::path calib_path;
 
-    bool first_frame_ref = true;   // if false, use world as reference
+    bool first_frame_ref = true;  // if false, use world as reference
     int begin_frame = 0;
     int end_frame = 1001;
     int step_frame = 1;
@@ -33,7 +32,7 @@ public:
     float correction_deg = 0.0;
 
     bool deskew = true;
-    std::string lidar_type_guess = "velodyne"; // hesai
+    std::string lidar_type_guess = "velodyne";  // hesai
 
     bool color_map_on = false;
     int color_channel = 0;
@@ -55,7 +54,6 @@ public:
     float rand_down_r = 1.0;
     float vox_down_m = 0.5 * voxel_size_m;
 
-
     ////////////////////// hash map data structure
     long int buffer_size = 1000000;
 
@@ -71,10 +69,8 @@ public:
     int diff_ts_local = 50;
     bool use_mid_ts = false;
 
-
     ////////////////////// mapping
     int local_map_reset_freq = 1;
-
 
     ////////////////////// tracking
     bool track_on = true;
@@ -88,11 +84,9 @@ public:
     float reg_convergence_criterion = 0.0001;
 
     bool query_locally = true;
-    
-
 
     // Methods
     void FromFile(const std::filesystem::path& yaml_file);
 };
 
-}
+}  // namespace lo
