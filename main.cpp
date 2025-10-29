@@ -1,7 +1,6 @@
 #include <iostream>
 
-#include "config.hpp"
-#include "dataset.hpp"
+#include "dataset.hpp"  // includes config itself
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -19,7 +18,14 @@ int main(int argc, char** argv) {
         std::cout << "Random downsample: " << cfg.rand_downsample << std::endl;
         std::cout << "Data path: " << cfg.data_path << std::endl;
 
-        lo::Dataset dataset(cfg.data_path, cfg.data_loader_seq);
+        lo::Dataset dataset(cfg);
+        lo::FrameData frame_data = dataset.get(0);
+        std::cout << frame_data.points.innerSize() << " " << frame_data.points.outerSize() << " " << frame_data.point_ts.size() << std::endl
+                  << std::endl;
+
+        std::cout << dataset.last_odom_transformation << std::endl << std::endl;
+        std::cout << dataset.odom_poses.size() << " " << dataset.travel_dist.size() << std::endl;
+
     } catch (const std::exception& e) {
         std::cout << "Exception: " << e.what() << "\n";
         return 2;

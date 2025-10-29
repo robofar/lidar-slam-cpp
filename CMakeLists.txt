@@ -43,13 +43,14 @@ target_include_directories(config PUBLIC include/)
 
 add_library(dataset STATIC utils/dataset.cpp)
 target_include_directories(dataset PUBLIC include/)
-target_link_libraries(dataset PUBLIC Eigen3::Eigen)
+target_link_libraries(dataset PUBLIC Eigen3::Eigen PUBLIC config)
 
 #### Executable
 add_executable(main main.cpp)
 
 #### Linking ("keeping the promises from Preprocessing step of compilation")
-target_link_libraries(main PRIVATE config dataset)
+#target_link_libraries(main PRIVATE config dataset)
+target_link_libraries(main PRIVATE dataset PRIVATE config)
 
 #### Printing
 get_target_property(DATASET_INCS dataset INCLUDE_DIRECTORIES)

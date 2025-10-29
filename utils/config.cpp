@@ -78,3 +78,7 @@ void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
         }
     }
 }
+
+void lo::Config::TestFcn() const {
+    std::cout << "testing whether linking is neccessary" << std::endl;
+}
