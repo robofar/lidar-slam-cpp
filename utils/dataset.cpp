@@ -20,9 +20,6 @@ lo::Dataset::Dataset(const Config& config) : cfg(config) {  // cfg(config) is sh
     std::sort(scan_files.begin(), scan_files.end());
     std::cout << "[KITTI Dataset] Loaded " << scan_files.size() << " scans from " << velodyne_dir << std::endl;
 
-    config.TestFcn();
-    cfg.TestFcn();
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     silence = cfg.silence;

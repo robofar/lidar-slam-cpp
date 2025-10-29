@@ -3,7 +3,6 @@
 #include <yaml-cpp/yaml.h>
 
 #include <iostream>
-#include <stdexcept>
 
 void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
     if (!std::filesystem::exists(yaml_file)) {
