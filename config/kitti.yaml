@@ -1,0 +1,16 @@
+setting:
+  name: "lidar_slam"
+  data_loader_name: "kitti"
+  data_loader_seq: "00"
+
+  output_root: "./experiments"
+  data_path: "/media/faris/1B6B-12E9/data_odometry_velodyne/dataset/"
+  #data_path: "/home/faris/Desktop/SLAM/lidar-slam/data/kitti_example/"
+
+  kitti_correction_on: True
+  correction_deg: 0.205 # 0.205
+
+process:
+  min_range_m: 3.0
+  max_range_m: 80.0
+  min_z_m: -3.5

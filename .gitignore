@@ -1,0 +1,25 @@
+# Build files
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Object and binary files
+*.o
+*.so
+*.a
+*.out
+*.bin
+*.log
+
+# Cache and temp
+.cache/
+*.cache
+*.tmp
+
+# IDEs
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
