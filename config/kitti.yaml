@@ -7,10 +7,12 @@ setting:
   data_path: "/media/faris/1B6B-12E9/KITTI/data_odometry_velodyne/dataset/"
   #data_path: "/home/faris/Desktop/SLAM/lidar-slam/data/kitti_example/"
 
-  kitti_correction_on: True
+  kitti_correction_on: true
   correction_deg: 0.205 # 0.205
+
+  deskew: true
 
 process:
   min_range_m: 3.0
-  max_range_m: 80.0
+  max_range_m: 55.0
   min_z_m: -3.5

@@ -1,3 +1,6 @@
+#pragma once
+
+#include <array>
 #include <filesystem>
 #include <string>
 
@@ -48,11 +51,11 @@ class Config {
 
     float voxel_size_m = 1.0;
     int num_points_per_voxel = 20;
-    float source_vox_down_m = 1.5 * voxel_size_m;
 
     bool rand_downsample = false;
     float rand_down_r = 1.0;
     float vox_down_m = 0.5 * voxel_size_m;
+    float source_vox_down_m = 1.5 * voxel_size_m;
 
     ////////////////////// hash map data structure
     long int buffer_size = 1000000;
@@ -73,7 +76,7 @@ class Config {
     int local_map_reset_freq = 1;
 
     ////////////////////// tracking
-    bool track_on = true;
+    bool track_on = false;
     bool uniform_motion_on = true;
     float max_valid_dist = 0.6;
     bool use_robust_kernel = true;
@@ -85,8 +88,23 @@ class Config {
 
     bool query_locally = true;
 
+    ////////////////////// ReRun Visualizer
+    bool rerun_viz_on = true;
+
+    double world_axes_length = 5.0;
+    double current_axes_length = 4.0;
+    double point_radius = 0.02;
+
+    // RGB colors as {R, G, B}
+    std::array<int, 3> odometry_trajectory_color = {255, 165, 0};  // orange
+    std::array<int, 3> slam_trajectory_color = {255, 0, 0};        // red
+    std::array<int, 3> gt_trajectory_color = {0, 0, 255};          // blue
+
+    ////////////////////// PGO
+    bool pgo_on = false;
+
     // Methods
-    void FromFile(const std::filesystem::path& yaml_file);
+    void ReadFromYaml(const std::filesystem::path& yaml_file);
     void ConstFuncTest() const;
 };
 

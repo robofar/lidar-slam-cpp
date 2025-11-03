@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
+void lo::Config::ReadFromYaml(const std::filesystem::path& yaml_file) {
     if (!std::filesystem::exists(yaml_file)) {
         std::cout << "Provided config YAML file does not exist... Default "
                      "parameters are used..."
@@ -31,7 +31,7 @@ void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
 
                 this->name = get_or_str(s, "name", this->name);
                 this->run_name = this->name;
-                this->use_dataloader = get_or_bool(s, "use_kiss_icp_dataloader", this->use_dataloader);
+                this->use_dataloader = get_or_bool(s, "use_dataloader", this->use_dataloader);
                 this->data_loader_name = get_or_str(s, "data_loader_name", this->data_loader_name);
                 this->data_loader_seq = get_or_str(s, "data_loader_seq", this->data_loader_seq);
                 this->experiment_name = this->name + std::string("_") + this->data_loader_name + std::string("_") + this->data_loader_seq;
@@ -51,8 +51,6 @@ void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
                 if (this->kitti_correction_on) this->correction_deg = get_or_float(s, "correction_deg", this->correction_deg);
 
                 this->deskew = get_or_bool(s, "deskew", this->deskew);
-
-                std::cout << "setting done" << std::endl;
             }
 
             if (root["process"]) {
@@ -69,8 +67,6 @@ void lo::Config::FromFile(const std::filesystem::path& yaml_file) {
                     this->rand_down_r = get_or_float(s, "rand_down_r", this->rand_down_r);
                 else
                     this->vox_down_m = get_or_float(s, "vox_down_m", this->vox_down_m);
-
-                std::cout << "process done" << std::endl;
             }
         } catch (const std::exception& e) {
             throw;  // just pass it to main

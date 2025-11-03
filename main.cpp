@@ -1,6 +1,12 @@
+#include <algorithm>
 #include <iostream>
 
 #include "dataset.hpp"  // includes config itself
+#include "kitti.hpp"
+#include "mapper.hpp"
+#include "tracker.hpp"
+#include "vhm.hpp"
+#include "visualizer.hpp"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -11,21 +17,70 @@ int main(int argc, char** argv) {
     try {
         std::string config_path = argv[1];
         lo::Config cfg;
-        cfg.FromFile(config_path);
-        std::cout << "Frames: [" << cfg.begin_frame << ", " << cfg.end_frame << "]. Step: " << cfg.step_frame << "\n";
-        std::cout << "Deskew: " << cfg.deskew << std::endl;
-        std::cout << "Min range: " << cfg.min_range << "[m]. Max range: " << cfg.max_range << "[m]." << std::endl;
-        std::cout << "Random downsample: " << cfg.rand_downsample << std::endl;
-        std::cout << "Data path: " << cfg.data_path << std::endl;
+        cfg.ReadFromYaml(config_path);
 
-        lo::Dataset dataset(cfg);
-        lo::FrameData frame_data = dataset.get(0);
-        std::cout << frame_data.points.innerSize() << " " << frame_data.points.outerSize() << " " << frame_data.point_ts.size() << std::endl
-                  << std::endl;
+        lo::KITTIOdometryDataset kitti(cfg);
+        lo::Dataset dataset(cfg, kitti);
+        lo::VoxelHashMap vhm(cfg);
+        lo::Mapper mapper(cfg, dataset, vhm);
+        lo::Tracker tracker(cfg, vhm);
+        lo::Visualizer visualizer(cfg);  // if cfg.rerun_vis_on=false it will not be instantiated
 
-        std::cout << dataset.last_odom_transformation << std::endl << std::endl;
-        std::cout << dataset.odom_poses.size() << " " << dataset.travel_dist.size() << std::endl;
+        for (size_t frame_id = 0; frame_id < dataset.total_pc_count; frame_id++) {
+            std::cout << "Frame: " << frame_id << std::endl;
 
+            // I. Load data ; Preprocess Pm and Pr ; Guess initial pose (constant velocity model)
+            if (cfg.use_dataloader)
+                dataset.readFrameWithLoader(frame_id);
+            else
+                throw std::runtime_error("For now, only dataloaders are supported");
+            dataset.preprocessFrame(frame_id);
+            dataset.initialPoseGuess(frame_id);
+
+            // II. Odometry
+            if (frame_id > 0) {
+                if (cfg.track_on) {
+                    throw std::runtime_error("Tracking mode is not yet implemented...");
+                } else {  // incremental mapping with gt pose
+                    if (dataset.gt_pose_provided) {
+                        std::cout << "Mapping..." << std::endl;
+                        dataset.UpdatePoses(frame_id, dataset.cur_pose_guess);
+                    } else {
+                        throw std::runtime_error("You are using the mapping mode, but no pose is provided.");
+                    }
+                }
+            } else {
+                dataset.UpdatePoses(frame_id, dataset.cur_pose_guess);
+            }
+
+            vhm.travel_dist = std::vector<double>(frame_id + 1);
+            std::transform(dataset.travel_dist.begin(), dataset.travel_dist.begin() + static_cast<int>(frame_id + 1), vhm.travel_dist.begin(),
+                           [](double dist) { return dist; });
+
+            // III. PGO
+            if (cfg.pgo_on) throw std::runtime_error("PGO not yet integrated...");
+
+            // IV. Mapping
+            // Update global map ; Reset local map ; Determine used poses for mapping
+            mapper.processFrame(frame_id, dataset.cur_point_cloud, dataset.cur_pose);
+            std::cout << "Mapper used poses size: " << mapper.used_poses.size() << std::endl;
+
+            if (cfg.rerun_viz_on) {
+                if (frame_id == 0) visualizer.log_world_frame(dataset.gt_poses.at(frame_id));
+                if (!dataset.odom_poses.empty()) {
+                    std::cout << "A";
+                    visualizer.log_current_odometry_frame(dataset.odom_poses.at(frame_id));
+                }
+                if (!dataset.gt_poses.empty()) {
+                    std::cout << "B";
+                    visualizer.log_current_gt_frame(dataset.gt_poses.at(frame_id));
+                }
+            }
+
+            std::cout << "---------------" << std::endl;
+        }
+
+        // V. Evaluation
     } catch (const std::exception& e) {
         std::cout << "Exception: " << e.what() << "\n";
         return 2;

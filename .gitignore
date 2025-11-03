@@ -23,3 +23,6 @@ cmake_install.cmake
 
 # OS junk
 .DS_Store
+
+# 3rdparty
+3rdparty/
