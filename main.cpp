@@ -5,6 +5,7 @@
 #include "kitti.hpp"
 #include "mapper.hpp"
 #include "tracker.hpp"
+#include "utils.hpp"
 #include "vhm.hpp"
 #include "visualizer.hpp"
 
@@ -63,7 +64,6 @@ int main(int argc, char** argv) {
             // IV. Mapping
             // Update global map ; Reset local map ; Determine used poses for mapping
             mapper.processFrame(frame_id, dataset.cur_point_cloud, dataset.cur_pose);
-            std::cout << "Mapper used poses size: " << mapper.used_poses.size() << std::endl;
 
             if (cfg.rerun_viz_on) {
                 if (frame_id == 0) visualizer.log_world_frame(dataset.gt_poses.at(frame_id));
@@ -77,6 +77,10 @@ int main(int argc, char** argv) {
                     visualizer.log_gt_positions(frame_id, dataset.gt_poses);
                     visualizer.log_gt_trajectory(frame_id, dataset.gt_poses);
                 }
+                // auto cur_point_cloud_visualizer = std::move(lo::transformPointCloud(dataset.cur_point_cloud, dataset.cur_pose));
+                // visualizer.log_current_scan(cur_point_cloud_visualizer);
+                visualizer.log_current_local_map(vhm.getFlattenedLocalMap());
+                // visualizer.log_global_map(vhm.getFlattenedGlobalMap());
             }
 
             std::cout << "---------------" << std::endl;

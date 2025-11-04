@@ -34,6 +34,7 @@ void lo::VoxelHashMap::Update(size_t frame_id, const Eigen::MatrixXd& points) {
 }
 
 void lo::VoxelHashMap::resetLocalMap(size_t frame_id, const Eigen::Vector3d& sensor_position) {
+    this->local_vhm.clear();
     const double radius2 = this->local_map_radius * this->local_map_radius;
     for (auto it = this->vhm.begin(); it != this->vhm.end(); it++) {  // for every voxel
         std::vector<PointData> kept_voxel_points;

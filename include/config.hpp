@@ -49,7 +49,7 @@ class Config {
     float min_z = -5.0;
     float max_z = 80.0;
 
-    float voxel_size_m = 1.0;
+    float voxel_size_m = 2.0;
     int num_points_per_voxel = 20;
 
     bool rand_downsample = false;

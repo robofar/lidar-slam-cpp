@@ -2,6 +2,7 @@
 
 #include <Eigen/Core>
 #include <array>
+#include <iostream>
 #include <vector>
 
 #include "config.hpp"
@@ -76,5 +77,37 @@ class VoxelHashMap {
     std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> nearestNeighborSearch(const Eigen::MatrixXd& query_points,
                                                                                    float max_valid_dist,
                                                                                    bool use_neighb_voxels = true);
+
+    inline std::vector<Eigen::Vector3d> getFlattenedGlobalMap() {
+        // pre-count for a single allocation
+        size_t total = 0;
+        for (const auto& kv : this->vhm) total += kv.second.size();
+        std::cout << "Total number of points in global map: " << total << std::endl;
+
+        std::vector<Eigen::Vector3d> out;
+        out.reserve(total);
+        for (const auto& kv : this->vhm) {
+            for (const auto& pd : kv.second) {
+                out.push_back(pd.xyz);
+            }
+        }
+        return out;
+    }
+
+    inline std::vector<Eigen::Vector3d> getFlattenedLocalMap() {
+        // pre-count for a single allocation
+        size_t total = 0;
+        for (const auto& kv : this->local_vhm) total += kv.second.size();
+        std::cout << "Total number of points in local map: " << total << std::endl;
+
+        std::vector<Eigen::Vector3d> out;
+        out.reserve(total);
+        for (const auto& kv : this->local_vhm) {
+            for (const auto& pd : kv.second) {
+                out.push_back(pd.xyz);
+            }
+        }
+        return out;
+    }
 };
 }  // namespace lo

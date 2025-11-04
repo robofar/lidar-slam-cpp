@@ -199,6 +199,7 @@ std::vector<Eigen::Matrix4d> lo::KITTIOdometryDataset::loadPosesCam(const std::s
 std::vector<Eigen::Matrix4d> lo::KITTIOdometryDataset::convertCamPosesToLidar(const std::vector<Eigen::Matrix4d>& poses_cam) const {
     const auto itTr = this->calib_raw.find("Tr");
     if (itTr == this->calib_raw.end() || itTr->second.size() != 12) throw std::runtime_error("Missing/invalid 'Tr' in calib_raw");
+
     Eigen::Matrix4d Tr = Eigen::Matrix4d::Identity();
     Tr.topLeftCorner<3, 4>() = Eigen::Map<const RowMajor3x4>(itTr->second.data());
     const Eigen::Matrix4d Tr_inv = Tr.inverse();

@@ -131,6 +131,22 @@ void lo::Visualizer::log_gt_trajectory(const int frame_id, const std::vector<Sop
     log_trajectory_lines("trajectory/gt", frame_id, gt_poses, {255, 0, 0});
 }
 
+// ---------------- points ----------------
+void lo::Visualizer::log_current_local_map(const std::vector<Eigen::Vector3d>& local_map_xyz, float radii) const {
+    const std::array<uint8_t, 3> blue{0, 0, 255};
+    log_pointcloud_xyz("world/current_local_map", local_map_xyz, &blue, radii);
+}
+
+void lo::Visualizer::log_global_map(const std::vector<Eigen::Vector3d>& global_map_xyz, float radii) const {
+    const std::array<uint8_t, 3> red{255, 0, 0};
+    log_pointcloud_xyz("world/global_map", global_map_xyz, &red, radii);
+}
+
+void lo::Visualizer::log_current_scan(const Eigen::MatrixXd& scan_xyz, float radii) const {
+    const std::array<uint8_t, 3> green{0, 255, 0};
+    log_pointcloud_xyz("world/current_scan", scan_xyz, &green, radii);
+}
+
 // ---------------- helpers ----------------
 rerun::datatypes::Vec3D lo::Visualizer::Vec3(const Eigen::Vector3d& v) {
     return rerun::datatypes::Vec3D{static_cast<float>(v.x()), static_cast<float>(v.y()), static_cast<float>(v.z())};
@@ -190,6 +206,38 @@ void lo::Visualizer::log_trajectory_lines(const std::string& path,
 
     auto arche =
         rerun::archetypes::LineStrips3D(std::move(strips)).with_colors(std::vector<rerun::components::Color>{colorRGB(rgb[0], rgb[1], rgb[2])});
+
+    recording_stream.log(path.c_str(), std::move(arche));
+}
+
+void lo::Visualizer::log_pointcloud_xyz(const std::string& path, const Eigen::MatrixXd& pts, const std::array<uint8_t, 3>* rgb, float radii) const {
+    const int N = static_cast<int>(pts.rows());
+    std::vector<Eigen::Vector3d> v;
+    v.reserve(N);
+    for (int i = 0; i < N; ++i) {
+        v.emplace_back(pts(i, 0), pts(i, 1), pts(i, 2));
+    }
+    log_pointcloud_xyz(path, std::move(v), rgb, radii);
+}
+
+void lo::Visualizer::log_pointcloud_xyz(const std::string& path,
+                                        const std::vector<Eigen::Vector3d>& pts,
+                                        const std::array<uint8_t, 3>* rgb,
+                                        float radii) const {
+    const int N = static_cast<int>(pts.size());
+
+    std::vector<rerun::components::Position3D> positions;
+    positions.reserve(N);
+    for (const auto& p : pts) {
+        positions.emplace_back(static_cast<float>(p.x()), static_cast<float>(p.y()), static_cast<float>(p.z()));
+    }
+
+    auto arche =
+        rerun::archetypes::Points3D(std::move(positions)).with_radii(std::vector<rerun::components::Radius>{rerun::components::Radius(radii)});
+
+    if (rgb) {
+        arche = std::move(arche).with_colors(std::vector<rerun::components::Color>{rerun::components::Color((*rgb)[0], (*rgb)[1], (*rgb)[2])});
+    }
 
     recording_stream.log(path.c_str(), std::move(arche));
 }

@@ -54,9 +54,9 @@ void lo::Dataset::initialPoseGuess(size_t frame_id) {
         else
             this->cur_pose_guess = SE3();
     } else if (frame_id > 0) {
-        if (!(this->cfg.track_on) && this->gt_pose_provided)  // mapping (no tracking + gt_poses provided)
+        if (!(this->cfg.track_on) && this->gt_pose_provided) {  // mapping (no tracking + gt_poses provided)
             this->cur_pose_guess = this->gt_poses[frame_id];
-        else {
+        } else {
             if (this->cfg.uniform_motion_on)  // uniform motion model
                 this->cur_pose_guess = (this->last_pose * this->last_odom_transformation);
             else  // no motion prior
@@ -126,15 +126,17 @@ void lo::Dataset::preprocessFrame(size_t frame_id) {
     this->readFrameWithLoader(frame_id);
 
     // 1. Deskew
-    this->Deskew();
+    // this->Deskew();
 
     // 2. Crop pcd for mapping
+    /*
     auto valid_indices_crop = lo::Dataset::Crop(this->cur_point_cloud, this->cfg.min_range, this->cfg.max_range);
     Eigen::MatrixXd pcd_cropped(valid_indices_crop.size(), this->cur_point_cloud.cols());
     for (size_t i = 0; i < valid_indices_crop.size(); i++) {
         pcd_cropped.row(i) = this->cur_point_cloud.row(valid_indices_crop[i]);
     }
     this->cur_point_cloud = std::move(pcd_cropped);
+    */
 
     // 3. Voxel Downsample pcd for mapping
     std::vector<size_t> points_idx_mapping = VoxelDownSamplePointCloud(this->cur_point_cloud, this->cfg.vox_down_m);
