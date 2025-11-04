@@ -19,8 +19,13 @@ class Visualizer {
     // -------- Poses as frames (axes) --------
     void log_world_frame(const Sophus::SE3d& T_world) const;
     void log_current_odometry_frame(const Sophus::SE3d& T_odom) const;
-    void log_current_slam_frame(const Sophus::SE3d& T_slam) const;  // optional
+    void log_current_slam_frame(const Sophus::SE3d& T_slam) const;
     void log_current_gt_frame(const Sophus::SE3d& T_gt) const;
+
+    // -------- Positions as points --------
+    void log_odometry_positions(int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const;
+    void log_slam_positions(int frame_id, const std::vector<Sophus::SE3d>& slam_poses) const;
+    void log_gt_positions(int frame_id, const std::vector<Sophus::SE3d>& gt_poses) const;
 
   private:  // --- helpers ---
     static rerun::datatypes::Vec3D Vec3(const Eigen::Vector3d& v);

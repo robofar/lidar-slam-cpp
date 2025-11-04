@@ -68,12 +68,12 @@ int main(int argc, char** argv) {
             if (cfg.rerun_viz_on) {
                 if (frame_id == 0) visualizer.log_world_frame(dataset.gt_poses.at(frame_id));
                 if (!dataset.odom_poses.empty()) {
-                    std::cout << "A";
                     visualizer.log_current_odometry_frame(dataset.odom_poses.at(frame_id));
+                    visualizer.log_odometry_positions(frame_id, dataset.odom_poses);
                 }
                 if (!dataset.gt_poses.empty()) {
-                    std::cout << "B";
                     visualizer.log_current_gt_frame(dataset.gt_poses.at(frame_id));
+                    visualizer.log_gt_positions(frame_id, dataset.gt_poses);
                 }
             }
 

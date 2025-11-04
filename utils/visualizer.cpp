@@ -59,6 +59,64 @@ void lo::Visualizer::log_current_gt_frame(const Sophus::SE3d& T_gt) const {
     log_axes("poses/gt/axes", static_cast<float>(config.current_axes_length), colors);
 }
 
+void lo::Visualizer::log_current_slam_frame(const Sophus::SE3d& T_slam) const {
+    const Eigen::Matrix4d T_slam_Eigen = T_slam.matrix();
+    const Eigen::Matrix3d R = T_slam_Eigen.topLeftCorner<3, 3>();
+    const Eigen::Vector3d t = T_slam_Eigen.topRightCorner<3, 1>();
+
+    rerun::datatypes::Vec3D cols[3];
+    eigen_R_to_columns(R, cols);
+
+    recording_stream.log("poses/slam", rerun::archetypes::Transform3D(rerun::components::Translation3D(Vec3(t)), cols));
+
+    const std::array<std::array<uint8_t, 3>, 3> colors = {{{255, 0, 0}, {0, 255, 0}, {0, 0, 255}}};
+
+    log_axes("poses/slam/axes", static_cast<float>(config.current_axes_length), colors);
+}
+
+// Positions as points
+void lo::Visualizer::log_odometry_positions(int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const {
+    std::vector<rerun::components::Position3D> pts;
+    for (int i = 0; i < frame_id + 1; i++) {
+        Eigen::Vector3d position = odom_poses.at(i).translation();
+        pts.emplace_back(Vec3(position));
+    }
+
+    auto arche = rerun::archetypes::Points3D(std::move(pts))
+                     .with_colors(std::vector<rerun::components::Color>{colorRGB(255, 0, 0)})
+                     .with_radii(std::vector<rerun::components::Radius>{rerun::components::Radius(0.2f)});
+
+    recording_stream.log("positions/odometry", std::move(arche));
+}
+
+void lo::Visualizer::log_slam_positions(int frame_id, const std::vector<Sophus::SE3d>& slam_poses) const {
+    std::vector<rerun::components::Position3D> pts;
+    for (int i = 0; i < frame_id + 1; i++) {
+        Eigen::Vector3d position = slam_poses.at(i).translation();
+        pts.emplace_back(Vec3(position));
+    }
+
+    auto arche = rerun::archetypes::Points3D(std::move(pts))
+                     .with_colors(std::vector<rerun::components::Color>{colorRGB(0, 255, 0)})
+                     .with_radii(std::vector<rerun::components::Radius>{rerun::components::Radius(0.2f)});
+
+    recording_stream.log("positions/slam", std::move(arche));
+}
+
+void lo::Visualizer::log_gt_positions(int frame_id, const std::vector<Sophus::SE3d>& gt_poses) const {
+    std::vector<rerun::components::Position3D> pts;
+    for (int i = 0; i < frame_id + 1; i++) {
+        Eigen::Vector3d position = gt_poses.at(i).translation();
+        pts.emplace_back(Vec3(position));
+    }
+
+    auto arche = rerun::archetypes::Points3D(std::move(pts))
+                     .with_colors(std::vector<rerun::components::Color>{colorRGB(0, 0, 255)})
+                     .with_radii(std::vector<rerun::components::Radius>{rerun::components::Radius(0.2f)});
+
+    recording_stream.log("positions/gt", std::move(arche));
+}
+
 // ---------------- helpers ----------------
 rerun::datatypes::Vec3D lo::Visualizer::Vec3(const Eigen::Vector3d& v) {
     return rerun::datatypes::Vec3D{static_cast<float>(v.x()), static_cast<float>(v.y()), static_cast<float>(v.z())};
