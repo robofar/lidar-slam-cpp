@@ -70,10 +70,12 @@ int main(int argc, char** argv) {
                 if (!dataset.odom_poses.empty()) {
                     visualizer.log_current_odometry_frame(dataset.odom_poses.at(frame_id));
                     visualizer.log_odometry_positions(frame_id, dataset.odom_poses);
+                    visualizer.log_odom_trajectory(frame_id, dataset.odom_poses);
                 }
                 if (!dataset.gt_poses.empty()) {
                     visualizer.log_current_gt_frame(dataset.gt_poses.at(frame_id));
                     visualizer.log_gt_positions(frame_id, dataset.gt_poses);
+                    visualizer.log_gt_trajectory(frame_id, dataset.gt_poses);
                 }
             }
 

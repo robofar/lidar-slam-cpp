@@ -117,6 +117,20 @@ void lo::Visualizer::log_gt_positions(int frame_id, const std::vector<Sophus::SE
     recording_stream.log("positions/gt", std::move(arche));
 }
 
+// ---------------- trajectories ----------------
+void lo::Visualizer::log_odom_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const {
+    // Python used green for odom trajectory
+    log_trajectory_lines("trajectory/odometry", frame_id, odom_poses, {0, 255, 0});
+}
+
+void lo::Visualizer::log_slam_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& slam_poses) const {
+    log_trajectory_lines("trajectory/slam", frame_id, slam_poses, {0, 0, 255});
+}
+
+void lo::Visualizer::log_gt_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& gt_poses) const {
+    log_trajectory_lines("trajectory/gt", frame_id, gt_poses, {255, 0, 0});
+}
+
 // ---------------- helpers ----------------
 rerun::datatypes::Vec3D lo::Visualizer::Vec3(const Eigen::Vector3d& v) {
     return rerun::datatypes::Vec3D{static_cast<float>(v.x()), static_cast<float>(v.y()), static_cast<float>(v.z())};
@@ -149,4 +163,33 @@ void lo::Visualizer::log_axes(const std::string& path, float length, const std::
     auto arrows = rerun::archetypes::Arrows3D().with_origins(std::move(origins)).with_vectors(std::move(vectors)).with_colors(std::move(colors));
 
     recording_stream.log(path.c_str(), std::move(arrows));
+}
+
+void lo::Visualizer::log_trajectory_lines(const std::string& path,
+                                          const int frame_id,
+                                          const std::vector<Sophus::SE3d>& poses,
+                                          const std::array<uint8_t, 3>& rgb) const {
+    if (frame_id < 2) {
+        return;
+    }
+
+    // Build a list of line strips, each with 2 points [prev, cur]
+    std::vector<rerun::components::LineStrip3D> strips;
+    // strips.reserve(poses.size() - 1);
+
+    for (size_t i = 1; i < frame_id + 1; i++) {
+        const Eigen::Vector3d p0 =
+            poses[i - 1].matrix().block<3, 1>(0, 3);  // Sophus::SE3d.matrix() == Eigen::Matrix4d ; or just poses[i - 1].translation()
+        const Eigen::Vector3d p1 = poses[i].matrix().block<3, 1>(0, 3);
+
+        std::vector<rerun::components::Position3D> points;
+        points.emplace_back(Vec3(p0));
+        points.emplace_back(Vec3(p1));
+        strips.emplace_back(std::move(points));
+    }
+
+    auto arche =
+        rerun::archetypes::LineStrips3D(std::move(strips)).with_colors(std::vector<rerun::components::Color>{colorRGB(rgb[0], rgb[1], rgb[2])});
+
+    recording_stream.log(path.c_str(), std::move(arche));
 }

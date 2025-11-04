@@ -16,16 +16,21 @@ class Visualizer {
     // ctor
     explicit Visualizer(const Config& config);
 
-    // -------- Poses as frames (axes) --------
+    // -------- Poses as frames (axes). Helper: log_axes --------
     void log_world_frame(const Sophus::SE3d& T_world) const;
     void log_current_odometry_frame(const Sophus::SE3d& T_odom) const;
     void log_current_slam_frame(const Sophus::SE3d& T_slam) const;
     void log_current_gt_frame(const Sophus::SE3d& T_gt) const;
 
     // -------- Positions as points --------
-    void log_odometry_positions(int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const;
+    void log_odometry_positions(int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const;  // Eigen::Matrix4d
     void log_slam_positions(int frame_id, const std::vector<Sophus::SE3d>& slam_poses) const;
     void log_gt_positions(int frame_id, const std::vector<Sophus::SE3d>& gt_poses) const;
+
+    // -------- Trajectory as line. Helper: log_trajectory_lines --------
+    void log_odom_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& odom_poses) const;
+    void log_slam_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& slam_poses) const;
+    void log_gt_trajectory(const int frame_id, const std::vector<Sophus::SE3d>& gt_poses) const;
 
   private:  // --- helpers ---
     static rerun::datatypes::Vec3D Vec3(const Eigen::Vector3d& v);
@@ -44,6 +49,9 @@ class Visualizer {
                             float radii) const;
 
     // Log trajectory as line segments between consecutive positions
-    void log_trajectory_lines(const std::string& path, const std::vector<Eigen::Matrix4d>& poses, const std::array<uint8_t, 3>& rgb) const;
+    void log_trajectory_lines(const std::string& path,
+                              const int frame_id,
+                              const std::vector<Sophus::SE3d>& poses,
+                              const std::array<uint8_t, 3>& rgb) const;
 };
 }  // namespace lo
