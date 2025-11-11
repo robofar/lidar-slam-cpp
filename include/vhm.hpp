@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <array>
 #include <iostream>
+#include <unordered_map>
 #include <vector>
 
 #include "config.hpp"
@@ -71,15 +72,16 @@ class VoxelHashMap {
     bool isEmpty() { return (this->vhm.size() == 0); }
     size_t count() { return this->vhm.size(); }
 
-    void Update(size_t frame_id, const Eigen::MatrixXd& points);
+    void Update(size_t frame_id, const Eigen::Matrix3Xd& points);
     void resetLocalMap(size_t frame_id, const Eigen::Vector3d& sensor_position);
     void setSearchNeighborhood(int num_nei_cells = 1, float search_alpha = 1.0);
-    std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> nearestNeighborSearch(const Eigen::MatrixXd& query_points,
+    std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> nearestNeighborSearch(const Eigen::Matrix3Xd& query_points,
                                                                                    float max_valid_dist,
-                                                                                   bool use_neighb_voxels = true);
+                                                                                   bool use_neighb_voxels = true,
+                                                                                   bool search_in_local_map = false) const;
 
+    // For ReRun visualization
     inline std::vector<Eigen::Vector3d> getFlattenedGlobalMap() {
-        // pre-count for a single allocation
         size_t total = 0;
         for (const auto& kv : this->vhm) total += kv.second.size();
         std::cout << "Total number of points in global map: " << total << std::endl;
@@ -94,8 +96,8 @@ class VoxelHashMap {
         return out;
     }
 
+    // For ReRun visualization
     inline std::vector<Eigen::Vector3d> getFlattenedLocalMap() {
-        // pre-count for a single allocation
         size_t total = 0;
         for (const auto& kv : this->local_vhm) total += kv.second.size();
         std::cout << "Total number of points in local map: " << total << std::endl;

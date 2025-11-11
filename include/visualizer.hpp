@@ -34,8 +34,7 @@ class Visualizer {
 
     // -------- Scans / maps (point clouds) --------
     // Accept either Nx3 (XYZ) or Nx4 (XYZI/RGB—ignores extra columns)
-    void log_current_scan(const Eigen::MatrixXd& scan_xyz,
-                          float radii = 0.1f) const;  // Eigen::MatrixXd accepts shape (N,K) ; or maybe use Eigen::MatrixX3d (N,3)
+    void log_current_scan(const Eigen::MatrixX3d& scan_xyz, float radii = 0.1f) const;
     void log_current_local_map(const std::vector<Eigen::Vector3d>& local_map_xyz, float radii = 0.1f) const;
     void log_global_map(const std::vector<Eigen::Vector3d>& global_map_xyz, float radii = 0.1f) const;
 
@@ -50,7 +49,7 @@ class Visualizer {
     void log_axes(const std::string& path, float length, const std::array<std::array<uint8_t, 3>, 3>& rgb_axes) const;
 
     // Log a point cloud (Nx3 or Nx4)
-    void log_pointcloud_xyz(const std::string& path, const Eigen::MatrixXd& pts, const std::array<uint8_t, 3>* rgb, float radii) const;
+    void log_pointcloud_xyz(const std::string& path, const Eigen::MatrixX3d& pts, const std::array<uint8_t, 3>* rgb, float radii) const;
     void log_pointcloud_xyz(const std::string& path, const std::vector<Eigen::Vector3d>& pts, const std::array<uint8_t, 3>* rgb, float radii) const;
 
     // Log trajectory as line segments between consecutive positions

@@ -5,6 +5,12 @@
 #include <vector>
 
 namespace lo {
+inline Eigen::Matrix3Xd transformPointCloud(const Eigen::Matrix3Xd& points, const Sophus::SE3d& T_w_l) {
+    const Eigen::Matrix3d R = T_w_l.so3().matrix();
+    const Eigen::Vector3d t = T_w_l.translation();
+    return (R * points).colwise() + t;  // vectorized: R*X + t
+}
+/*
 inline Eigen::MatrixXd transformPointCloud(const Eigen::MatrixXd& points, const Sophus::SE3d& T_w_l) {
     const Eigen::Index N = points.rows();
 
@@ -17,4 +23,5 @@ inline Eigen::MatrixXd transformPointCloud(const Eigen::MatrixXd& points, const 
 
     return out_h.leftCols<3>();  // (N,3)
 }
+*/
 }  // namespace lo

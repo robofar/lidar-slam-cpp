@@ -43,6 +43,7 @@ void lo::Dataset::readFrameWithLoader(size_t frame_id) {
     auto frame_data = this->loader.get(frame_id);
 
     this->cur_point_cloud = frame_data.points;
+    this->cur_reflectance = frame_data.reflectance;
     if (this->cfg.deskew) this->cur_point_ts = frame_data.point_ts;
 }
 
@@ -69,33 +70,34 @@ void lo::Dataset::initialPoseGuess(size_t frame_id) {
 
 void lo::Dataset::Deskew() {
     if (!this->cfg.deskew || this->cur_point_ts.size() == 0) return;
-    const auto& [min, max] = std::minmax_element(this->cur_point_ts.begin(), this->cur_point_ts.end());
-    const double min_time = *min;
-    const double max_time = *max;
-    const auto normalize = [&](const double t) { return (t - min_time) / (max_time - min_time); };  // 0.0 - 1.0
-    const auto& omega = this->last_odom_transformation.log();                                       // 6x1
+    const auto& [min_it, max_it] = std::minmax_element(this->cur_point_ts.begin(), this->cur_point_ts.end());
+    const double min_time = *min_it;
+    const double max_time = *max_it;
+    const auto normalize = [&](const double t) { return (t - min_time) / (max_time - min_time); };  // 0..1
+    const Eigen::Matrix<double, 6, 1> omega = this->last_odom_transformation.log();
 
-    const Eigen::Index N = this->cur_point_cloud.rows();
-    for (Eigen::Index i = 0; i < N; i++) {
+    const Eigen::Index N = this->cur_point_cloud.cols();  // 3×N → iterate cols
+    for (Eigen::Index i = 0; i < N; ++i) {
         const double stamp = normalize(this->cur_point_ts[i]);
         const Sophus::SE3d T = Sophus::SE3d::exp((stamp - 1.0) * omega);
-        Eigen::Vector3d p = this->cur_point_cloud.row(i).head<3>().transpose();  // 3x1
-        const Eigen::Vector3d q = T * p;
-        cur_point_cloud.row(i).head<3>() = q.transpose();  // in-place change
+        Eigen::Vector3d p = this->cur_point_cloud.col(i);
+        this->cur_point_cloud.col(i) = T * p;  // in-place
     }
 }
 
-std::vector<size_t> lo::Dataset::Crop(const Eigen::MatrixXd& pcd, float min_range, float max_range) {
-    std::vector<size_t> keep_indices;
+std::vector<size_t> lo::Dataset::Crop(const Eigen::Matrix3Xd& pcd, float min_range, float max_range) {
+    const double min2 = double(min_range) * min_range;
+    const double max2 = double(max_range) * max_range;
 
-    const Eigen::Index N = pcd.rows();
-    Eigen::MatrixXd cropped_frame;
-    for (Eigen::Index i = 0; i < N; i++) {
-        double r = pcd.row(i).head<3>().norm();
-        if (r < max_range && r > min_range) keep_indices.push_back(i);
+    std::vector<size_t> keep;
+    keep.reserve(static_cast<size_t>(pcd.cols()));
+
+    // Fast simple for-loop; compilers auto-vectorize colwise squares well at -O3 -march=native
+    for (Eigen::Index i = 0; i < pcd.cols(); ++i) {
+        const double r2 = pcd.col(i).squaredNorm();
+        if (r2 > min2 && r2 < max2) keep.push_back(static_cast<size_t>(i));
     }
-
-    return keep_indices;
+    return keep;
 }
 
 lo::Voxel lo::Dataset::PointToVoxel(const Eigen::Vector3d& point, const double voxel_size) {
@@ -103,19 +105,18 @@ lo::Voxel lo::Dataset::PointToVoxel(const Eigen::Vector3d& point, const double v
                      static_cast<int>(std::floor(point.z() / voxel_size))};
 }
 
-std::vector<size_t> lo::Dataset::VoxelDownSamplePointCloud(const Eigen::MatrixXd& pcd, float voxel_size) {
+std::vector<size_t> lo::Dataset::VoxelDownSamplePointCloud(const Eigen::Matrix3Xd& pcd, float voxel_size) {
     std::map<lo::Voxel, int> voxel_grid;  // keep first index per voxel
-
     std::vector<size_t> downsampled_indices;
-    std::vector<size_t> indices(pcd.rows());
-    // numeric library ; like range in python -> fills vector from 0 to n-1, then you can iterate over
-    // indices, since there is no row-kinda-iterator in Eigen
+
+    const Eigen::Index N = pcd.cols();
+    std::vector<size_t> indices(static_cast<size_t>(N));
     std::iota(indices.begin(), indices.end(), 0);
-    // for (auto row : pcd.rowwise()) std::cout << row << std::endl;
-    std::for_each(indices.cbegin(), indices.cend(), [&](int i) {
-        auto row = pcd.row(i);
-        const auto voxel = lo::Dataset::PointToVoxel(Eigen::Vector3d(row.x(), row.y(), row.z()), voxel_size);
-        const auto status = voxel_grid.insert({voxel, i});
+
+    std::for_each(indices.cbegin(), indices.cend(), [&](size_t i) {
+        const Eigen::Vector3d p = pcd.col(static_cast<Eigen::Index>(i));
+        const auto voxel = lo::Dataset::PointToVoxel(p, voxel_size);
+        const auto status = voxel_grid.insert({voxel, static_cast<int>(i)});
         if (status.second) downsampled_indices.emplace_back(i);
     });
 
@@ -126,31 +127,29 @@ void lo::Dataset::preprocessFrame(size_t frame_id) {
     this->readFrameWithLoader(frame_id);
 
     // 1. Deskew
-    // this->Deskew();
+    if (this->cfg.deskew) this->Deskew();
 
     // 2. Crop pcd for mapping
-    /*
-    auto valid_indices_crop = lo::Dataset::Crop(this->cur_point_cloud, this->cfg.min_range, this->cfg.max_range);
-    Eigen::MatrixXd pcd_cropped(valid_indices_crop.size(), this->cur_point_cloud.cols());
-    for (size_t i = 0; i < valid_indices_crop.size(); i++) {
-        pcd_cropped.row(i) = this->cur_point_cloud.row(valid_indices_crop[i]);
+    auto keep = lo::Dataset::Crop(this->cur_point_cloud, this->cfg.min_range, this->cfg.max_range);
+    Eigen::Matrix3Xd pcd_cropped(3, keep.size());
+    for (size_t k = 0; k < keep.size(); ++k) {
+        pcd_cropped.col(k) = this->cur_point_cloud.col(static_cast<Eigen::Index>(keep[k]));
     }
     this->cur_point_cloud = std::move(pcd_cropped);
-    */
 
     // 3. Voxel Downsample pcd for mapping
-    std::vector<size_t> points_idx_mapping = VoxelDownSamplePointCloud(this->cur_point_cloud, this->cfg.vox_down_m);
-    Eigen::MatrixXd pcd_mapping(points_idx_mapping.size(), this->cur_point_cloud.cols());
-    for (size_t i = 0; i < points_idx_mapping.size(); i++) {
-        pcd_mapping.row(i) = this->cur_point_cloud.row(points_idx_mapping[i]);
+    std::vector<size_t> idx_map = VoxelDownSamplePointCloud(this->cur_point_cloud, this->cfg.vox_down_m);
+    Eigen::Matrix3Xd pcd_mapping(3, idx_map.size());
+    for (size_t k = 0; k < idx_map.size(); ++k) {
+        pcd_mapping.col(static_cast<Eigen::Index>(k)) = this->cur_point_cloud.col(static_cast<Eigen::Index>(idx_map[k]));
     }
     this->cur_point_cloud = std::move(pcd_mapping);
 
     // 3. Voxel Downsample pcd for registration
-    std::vector<size_t> points_idx_registration = VoxelDownSamplePointCloud(this->cur_point_cloud, this->cfg.source_vox_down_m);
-    this->cur_source_points = Eigen::MatrixXd(points_idx_registration.size(), this->cur_point_cloud.cols());
-    for (size_t i = 0; i < points_idx_registration.size(); i++) {
-        cur_source_points.row(i) = this->cur_point_cloud.row(points_idx_registration[i]);
+    std::vector<size_t> idx_reg = VoxelDownSamplePointCloud(this->cur_point_cloud, this->cfg.source_vox_down_m);
+    this->cur_source_points = Eigen::Matrix3Xd(3, idx_reg.size());
+    for (size_t k = 0; k < idx_reg.size(); ++k) {
+        this->cur_source_points.col(static_cast<Eigen::Index>(k)) = this->cur_point_cloud.col(static_cast<Eigen::Index>(idx_reg[k]));
     }
 }
 
@@ -181,7 +180,7 @@ void lo::Dataset::UpdatePoses(size_t frame_id, SE3 cur_pose) {
         this->pgo_poses.at(frame_id) = this->cur_pose;
     }
 
-    // deskew pcd for mapping -> but I already deskewed full scan in beginning so I dont need to do it again here
+    // deskew pcd for mapping -> I already deskewed full scan in beginning so I dont need to do it again here
 }
 
 void lo::Dataset::UpdatePosesAfterPGO(const std::vector<lo::SE3>& pgo_poses) {

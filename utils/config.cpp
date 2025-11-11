@@ -73,8 +73,3 @@ void lo::Config::ReadFromYaml(const std::filesystem::path& yaml_file) {
         }
     }
 }
-
-// const declaration is needed in both - prototype (.hpp) and implementation (.cpp)
-void lo::Config::ConstFuncTest() const {
-    std::cout << "testing const function" << std::endl;
-}

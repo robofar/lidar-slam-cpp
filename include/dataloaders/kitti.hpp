@@ -10,9 +10,11 @@ namespace lo {
 
 class FrameData {
   public:
-    Eigen::MatrixXd points;    // (N,4) ; std::vector<Eigen::Vector3d> ; std::vector<Eigen::Vector4d>
-    Eigen::VectorXd point_ts;  // (N,) ; std::vector<double>
-    FrameData(const Eigen::MatrixXd& points, Eigen::VectorXd point_ts) : points(points), point_ts(point_ts) {}
+    Eigen::Matrix3Xd points;
+    Eigen::VectorXd reflectance;
+    Eigen::VectorXd point_ts;
+    FrameData(const Eigen::Matrix3Xd& pts, const Eigen::VectorXd& refl, const Eigen::VectorXd& ts)
+        : points(std::move(pts)), reflectance(std::move(refl)), point_ts(std::move(ts)) {}
 };
 
 struct CalibData {
@@ -41,14 +43,14 @@ class KITTIOdometryDataset {
 
     // calibration & poses
     CalibData calib;
-    std::vector<Eigen::Matrix4d> gt_poses;  // optional; empty if not available
+    std::vector<Eigen::Matrix4d> gt_poses;  // empty if not available
 
     // ctors
     KITTIOdometryDataset(const Config& cfg);
 
     // static
-    static Eigen::MatrixXd readPointCloud(const std::string& scan_file);
-    static Eigen::VectorXd computePointTimestamps(const Eigen::MatrixXd& points);
+    static std::pair<Eigen::Matrix3Xd, Eigen::VectorXd> readPointCloud(const std::string& scan_file);
+    static Eigen::VectorXd computePointTimestamps(const Eigen::Matrix3Xd& points);
 
     // const
     size_t size() const;

@@ -41,7 +41,9 @@ int main(int argc, char** argv) {
             // II. Odometry
             if (frame_id > 0) {
                 if (cfg.track_on) {
-                    throw std::runtime_error("Tracking mode is not yet implemented...");
+                    std::cout << "Tracking..." << std::endl;
+                    auto cur_pose_odom = tracker.Tracking(frame_id, dataset.cur_source_points, dataset.cur_pose_guess, false);
+                    dataset.UpdatePoses(frame_id, cur_pose_odom);
                 } else {  // incremental mapping with gt pose
                     if (dataset.gt_pose_provided) {
                         std::cout << "Mapping..." << std::endl;
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
             // Update global map ; Reset local map ; Determine used poses for mapping
             mapper.processFrame(frame_id, dataset.cur_point_cloud, dataset.cur_pose);
 
+            // V. Visualization
             if (cfg.rerun_viz_on) {
                 if (frame_id == 0) visualizer.log_world_frame(dataset.gt_poses.at(frame_id));
                 if (!dataset.odom_poses.empty()) {
@@ -79,14 +82,14 @@ int main(int argc, char** argv) {
                 }
                 // auto cur_point_cloud_visualizer = std::move(lo::transformPointCloud(dataset.cur_point_cloud, dataset.cur_pose));
                 // visualizer.log_current_scan(cur_point_cloud_visualizer);
-                visualizer.log_current_local_map(vhm.getFlattenedLocalMap());
+                // visualizer.log_current_local_map(vhm.getFlattenedLocalMap());
                 // visualizer.log_global_map(vhm.getFlattenedGlobalMap());
             }
 
             std::cout << "---------------" << std::endl;
         }
 
-        // V. Evaluation
+        // VI. Evaluation
     } catch (const std::exception& e) {
         std::cout << "Exception: " << e.what() << "\n";
         return 2;

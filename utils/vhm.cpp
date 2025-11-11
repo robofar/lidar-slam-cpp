@@ -12,15 +12,17 @@ lo::VoxelHashMap::VoxelHashMap(const Config& cfg) : config(cfg) {
     this->local_map_radius = cfg.local_map_radius;
     this->diff_travel_dist_local = (cfg.local_map_radius * cfg.local_map_travel_dist_ratio);
     this->diff_ts_local = cfg.diff_ts_local;
+
+    this->setSearchNeighborhood();
 }
 
-void lo::VoxelHashMap::Update(size_t frame_id, const Eigen::MatrixXd& points) {
-    const Eigen::Index N = points.rows();
+void lo::VoxelHashMap::Update(size_t frame_id, const Eigen::Matrix3Xd& points) {
+    const Eigen::Index N = points.cols();
     for (Eigen::Index i = 0; i < N; i++) {
-        Eigen::Vector3d p = points.row(i).head<3>().transpose();  // 3x1
+        Eigen::Vector3d p = points.col(i);  // 3x1
         lo::VoxelKey vk = lo::VoxelHashMap::PointToVoxel(p, this->resolution);
-        if (this->vhm[vk].size() < this->k_per_voxel) {
-            this->vhm[vk].push_back(lo::PointData(p, frame_id));
+        if (this->vhm[vk].size() < static_cast<size_t>(this->k_per_voxel)) {
+            this->vhm[vk].push_back(lo::PointData(p, static_cast<int>(frame_id)));
         }
     }
 
@@ -81,16 +83,20 @@ void lo::VoxelHashMap::setSearchNeighborhood(int num_nei_cells, float search_alp
     }
 }
 
-std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> lo::VoxelHashMap::nearestNeighborSearch(const Eigen::MatrixXd& query_points,
+std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> lo::VoxelHashMap::nearestNeighborSearch(const Eigen::Matrix3Xd& query_points,
                                                                                                  float max_valid_dist,
-                                                                                                 bool use_neighb_voxels) {
-    const Eigen::Index N = query_points.rows();
-    const double max_valid_dist2 = max_valid_dist * max_valid_dist;
+                                                                                                 bool use_neighb_voxels,
+                                                                                                 bool search_in_local_map) const {
+    const Eigen::Index N = query_points.cols();
+    const double max_valid_dist2 = static_cast<double>(max_valid_dist) * max_valid_dist;
 
     std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> data_association_pairs;
+    data_association_pairs.reserve(static_cast<size_t>(N));
+
+    const VoxelMap& map = search_in_local_map ? local_vhm : vhm;
 
     for (Eigen::Index i = 0; i < N; i++) {
-        Eigen::Vector3d q_pt = query_points.row(i).head<3>().transpose();
+        Eigen::Vector3d q_pt = query_points.col(i);
         auto voxel = lo::VoxelHashMap::PointToVoxel(q_pt, this->resolution);
 
         double best_d2 = std::numeric_limits<double>::infinity();  // captured by reference in lambda
@@ -98,14 +104,15 @@ std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> lo::VoxelHashMap::neare
                                                 // addres of closest point than some indices. No need for smart pointers here
 
         auto inspect_voxel = [&](const VoxelKey& key) {
-            auto it = vhm.find(key);
-            if (it == vhm.end()) return;  // out of the map
+            lo::VoxelMap::const_iterator it = map.find(key);
+            if (it == map.end()) return;
+
             const auto& bucket = it->second;
-            for (size_t i = 0; i < bucket.size(); i++) {
-                const double dist2 = (bucket.at(i).xyz - q_pt).squaredNorm();
+            for (size_t j = 0; j < bucket.size(); j++) {
+                const double dist2 = (bucket[j].xyz - q_pt).squaredNorm();
                 if (dist2 < best_d2) {
                     best_d2 = dist2;
-                    closest_pt = &bucket.at(i);
+                    closest_pt = &bucket[j];
                 }
             }
         };

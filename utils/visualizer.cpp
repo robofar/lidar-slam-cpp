@@ -142,7 +142,7 @@ void lo::Visualizer::log_global_map(const std::vector<Eigen::Vector3d>& global_m
     log_pointcloud_xyz("world/global_map", global_map_xyz, &red, radii);
 }
 
-void lo::Visualizer::log_current_scan(const Eigen::MatrixXd& scan_xyz, float radii) const {
+void lo::Visualizer::log_current_scan(const Eigen::MatrixX3d& scan_xyz, float radii) const {
     const std::array<uint8_t, 3> green{0, 255, 0};
     log_pointcloud_xyz("world/current_scan", scan_xyz, &green, radii);
 }
@@ -210,12 +210,13 @@ void lo::Visualizer::log_trajectory_lines(const std::string& path,
     recording_stream.log(path.c_str(), std::move(arche));
 }
 
-void lo::Visualizer::log_pointcloud_xyz(const std::string& path, const Eigen::MatrixXd& pts, const std::array<uint8_t, 3>* rgb, float radii) const {
-    const int N = static_cast<int>(pts.rows());
+void lo::Visualizer::log_pointcloud_xyz(const std::string& path, const Eigen::MatrixX3d& pts, const std::array<uint8_t, 3>* rgb, float radii) const {
+    const int N = static_cast<int>(pts.cols());
     std::vector<Eigen::Vector3d> v;
     v.reserve(N);
     for (int i = 0; i < N; ++i) {
-        v.emplace_back(pts(i, 0), pts(i, 1), pts(i, 2));
+        // v.emplace_back(pts(i, 0), pts(i, 1), pts(i, 2));
+        v.emplace_back(pts(0, i), pts(1, i), pts(2, i));  // take column i
     }
     log_pointcloud_xyz(path, std::move(v), rgb, radii);
 }

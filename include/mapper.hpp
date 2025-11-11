@@ -22,6 +22,6 @@ class Mapper {
 
     // Methods
     void determineMappingPoses(size_t frame_id);
-    void processFrame(size_t frame_id, const Eigen::MatrixXd& point_cloud, const SE3& cur_pose);
+    void processFrame(size_t frame_id, const Eigen::Matrix3Xd& point_cloud, const SE3& cur_pose);
 };
 }  // namespace lo

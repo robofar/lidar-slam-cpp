@@ -52,53 +52,50 @@ size_t lo::KITTIOdometryDataset::size() const {
     return scan_files.size();
 }
 
-Eigen::MatrixXd lo::KITTIOdometryDataset::readPointCloud(const std::string& scan_file) {
+std::pair<Eigen::Matrix3Xd, Eigen::VectorXd> lo::KITTIOdometryDataset::readPointCloud(const std::string& scan_file) {
     std::ifstream ifs(scan_file, std::ios::binary);
     if (!ifs.is_open()) throw std::runtime_error("Failed to open file: " + scan_file);
 
-    std::vector<float> buffer((std::istreambuf_iterator<char>(ifs)), {});
-    size_t num_floats = buffer.size() / sizeof(float);
-    size_t num_points = num_floats / 4;
+    const auto bytes = std::filesystem::file_size(scan_file);
+    const size_t num_points = bytes / (4 * sizeof(float));
 
-    ifs.clear();
-    ifs.seekg(0, std::ios::beg);
-    std::vector<float> data(4 * num_points);
-    ifs.read(reinterpret_cast<char*>(data.data()), 4 * num_points * sizeof(float));
+    std::vector<float> buffer(4 * num_points);
+    ifs.read(reinterpret_cast<char*>(buffer.data()), bytes);
+    if (!ifs) throw std::runtime_error("Failed to read all data from: " + scan_file);
 
-    Eigen::MatrixXd points(num_points, 4);
-    for (size_t i = 0; i < num_points; ++i) {
-        points(i, 0) = static_cast<double>(data[i * 4 + 0]);
-        points(i, 1) = static_cast<double>(data[i * 4 + 1]);
-        points(i, 2) = static_cast<double>(data[i * 4 + 2]);
-        points(i, 3) = static_cast<double>(data[i * 4 + 3]);  // reflectance
-    }
+    // Map as 4xN (each column = one point: [x;y;z;r])
+    Eigen::Map<const Eigen::Matrix<float, 4, Eigen::Dynamic, Eigen::ColMajor>> M(buffer.data(), 4, static_cast<Eigen::Index>(num_points));
 
-    return points;
+    // Split into geometry (3xN) and reflectance (N)
+    Eigen::Matrix3Xd pts = M.topRows<3>().cast<double>();
+    Eigen::VectorXd refl = M.row(3).cast<double>().transpose();  // (N,)
+
+    return {std::move(pts), std::move(refl)};
 }
 
-Eigen::VectorXd lo::KITTIOdometryDataset::computePointTimestamps(const Eigen::MatrixXd& points) {
-    size_t N = points.rows();
+Eigen::VectorXd lo::KITTIOdometryDataset::computePointTimestamps(const Eigen::Matrix3Xd& points) {
+    const Eigen::Index N = points.cols();
     Eigen::VectorXd ts(N);
-
-    for (size_t i = 0; i < N; ++i) {
-        double x = points(i, 0);
-        double y = points(i, 1);
-        double yaw = -std::atan2(y, x);
+    // ts = normalized azimuth proportional to scan order
+    // yaw = -atan2(y, x);  ts = 0.5 * (yaw / pi + 1)
+    for (Eigen::Index i = 0; i < N; ++i) {
+        const double x = points(0, i);
+        const double y = points(1, i);
+        const double yaw = -std::atan2(y, x);
         ts(i) = 0.5 * (yaw / M_PI + 1.0);
     }
-
     return ts;
 }
 
 lo::FrameData lo::KITTIOdometryDataset::get(size_t idx) const {
     if (idx >= scan_files.size()) throw std::out_of_range("Index out of range.");
 
-    Eigen::MatrixXd points = readPointCloud(scan_files[idx]);
-    Eigen::VectorXd point_ts;
-    if (this->config.deskew) point_ts = computePointTimestamps(points);
+    auto [pts, refl] = readPointCloud(scan_files[idx]);
 
-    // return {points, point_ts};
-    return lo::FrameData(points, point_ts);
+    Eigen::VectorXd point_ts;  // empty by default
+    if (this->config.deskew) point_ts = computePointTimestamps(pts);
+
+    return lo::FrameData(std::move(pts), std::move(refl), std::move(point_ts));
 }
 
 std::unordered_map<std::string, std::vector<double>> lo::KITTIOdometryDataset::readCalibFile(const std::string& file_path) {

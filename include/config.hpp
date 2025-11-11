@@ -76,7 +76,7 @@ class Config {
     int local_map_reset_freq = 1;
 
     ////////////////////// tracking
-    bool track_on = false;
+    bool track_on = true;
     bool uniform_motion_on = true;
     float max_valid_dist = 0.6;
     bool use_robust_kernel = true;
@@ -105,7 +105,6 @@ class Config {
 
     // Methods
     void ReadFromYaml(const std::filesystem::path& yaml_file);
-    void ConstFuncTest() const;
 };
 
 }  // namespace lo

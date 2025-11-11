@@ -1,7 +1,7 @@
 setting:
   name: "lidar_slam"
   data_loader_name: "kitti"
-  data_loader_seq: "00"
+  data_loader_seq: "01"
 
   output_root: "./experiments"
   data_path: "/media/faris/1B6B-12E9/KITTI/data_odometry_velodyne/dataset/"
