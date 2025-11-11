@@ -20,7 +20,7 @@ Contributions are welcome!
 Feel free to suggest improvements to the odometry pipeline or ideas on improving the efficiency of the C++ implementation.
 
 ## Visualizer
-![ReRun Visualizer Example](media/lidar_slam_c++.png)
+![ReRun Visualizer Example](media/lidar_slam.png)
 
 ## Inspiration
 TODO
