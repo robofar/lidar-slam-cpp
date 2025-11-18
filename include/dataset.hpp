@@ -6,12 +6,13 @@
 
 #include "config.hpp"
 #include "kitti.hpp"
+#include "utils.hpp"
 
 namespace lo {
 
 using SE3 = Sophus::SE3d;
 // using Voxel = Eigen::Vector3i;   // < not defined
-using Voxel = std::array<int, 3>;  // < defined
+// using Voxel = std::array<int, 3>;  // < defined
 
 class Dataset {
   public:
@@ -48,7 +49,6 @@ class Dataset {
     void initialPoseGuess(size_t frame_id);
     void preprocessFrame(size_t frame_id);  // deskewing (TODO) + voxel downsampling
 
-    static Voxel PointToVoxel(const Eigen::Vector3d& point, const double voxel_size);
     static std::vector<size_t> VoxelDownSamplePointCloud(const Eigen::Matrix3Xd& pcd, float voxel_size);
     void Deskew();
     static std::vector<size_t> Crop(const Eigen::Matrix3Xd& pcd, float min_range, float max_range);

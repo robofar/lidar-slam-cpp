@@ -5,6 +5,8 @@ project(lidar_odometry LANGUAGES CXX)
 # Do not set global configurations -> Target oriented CMake for the win
 # I think its best to combine both
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # generates .json file with all compile commands (like if were writting without CMake)
@@ -33,6 +35,7 @@ add_subdirectory(./3rdparty/Sophus)
 
 #### Pre-compiled libraries
 find_package(yaml-cpp REQUIRED)
+find_package(OpenMP REQUIRED)
 
 # headers: /usr/include/eigen3/
 
@@ -61,7 +64,7 @@ target_link_libraries(dataset PUBLIC config PUBLIC Eigen3::Eigen PUBLIC Sophus::
 add_library(vhm STATIC utils/vhm.cpp)
 # bcs it links to config, it automatically inherits its directories path (i.e. include/, where vhm.hpp is also located)
 target_include_directories(vhm PUBLIC include/)
-target_link_libraries(vhm PUBLIC config PUBLIC Eigen3::Eigen)
+target_link_libraries(vhm PUBLIC config PUBLIC Eigen3::Eigen PUBLIC Sophus::Sophus PUBLIC OpenMP::OpenMP_CXX)
 
 add_library(mapper STATIC utils/mapper.cpp)
 target_include_directories(mapper PUBLIC include/)

@@ -25,7 +25,7 @@ class Config {
 
     bool first_frame_ref = true;  // if false, use world as reference
     int begin_frame = 0;
-    int end_frame = 1001;
+    int end_frame = 300;
     int step_frame = 1;
     int stop_frame_thre = 20;
 

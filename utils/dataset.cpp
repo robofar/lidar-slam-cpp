@@ -8,6 +8,7 @@
 #include <map>
 #include <numeric>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -100,25 +101,23 @@ std::vector<size_t> lo::Dataset::Crop(const Eigen::Matrix3Xd& pcd, float min_ran
     return keep;
 }
 
-lo::Voxel lo::Dataset::PointToVoxel(const Eigen::Vector3d& point, const double voxel_size) {
-    return lo::Voxel{static_cast<int>(std::floor(point.x() / voxel_size)), static_cast<int>(std::floor(point.y() / voxel_size)),
-                     static_cast<int>(std::floor(point.z() / voxel_size))};
-}
-
 std::vector<size_t> lo::Dataset::VoxelDownSamplePointCloud(const Eigen::Matrix3Xd& pcd, float voxel_size) {
-    std::map<lo::Voxel, int> voxel_grid;  // keep first index per voxel
+    std::unordered_set<lo::VoxelKey> voxel_grid;  // only uniqueness matters
     std::vector<size_t> downsampled_indices;
 
     const Eigen::Index N = pcd.cols();
-    std::vector<size_t> indices(static_cast<size_t>(N));
-    std::iota(indices.begin(), indices.end(), 0);
+    voxel_grid.reserve(static_cast<size_t>(N));           // avoid many rehashes
+    downsampled_indices.reserve(static_cast<size_t>(N));  // worst case
 
-    std::for_each(indices.cbegin(), indices.cend(), [&](size_t i) {
-        const Eigen::Vector3d p = pcd.col(static_cast<Eigen::Index>(i));
-        const auto voxel = lo::Dataset::PointToVoxel(p, voxel_size);
-        const auto status = voxel_grid.insert({voxel, static_cast<int>(i)});
-        if (status.second) downsampled_indices.emplace_back(i);
-    });
+    for (Eigen::Index i = 0; i < N; ++i) {
+        const Eigen::Vector3d p = pcd.col(i);
+        const lo::VoxelKey voxel = lo::PointToVoxel(p, voxel_size);  // or Dataset::PointToVoxel if same logic
+
+        auto [it, inserted] = voxel_grid.insert(voxel);
+        if (inserted) {
+            downsampled_indices.emplace_back(static_cast<size_t>(i));
+        }
+    }
 
     return downsampled_indices;
 }

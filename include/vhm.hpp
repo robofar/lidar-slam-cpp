@@ -2,15 +2,18 @@
 
 #include <Eigen/Core>
 #include <array>
+#include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <unordered_map>
 #include <vector>
 
 #include "config.hpp"
+#include "utils.hpp"
 
 namespace lo {
 
-using VoxelKey = std::array<int, 3>;  // does not have defined has, but has defined operators <,>,==,!=,...
+// using VoxelKey = std::array<int, 3>;  // does not have defined has, but has defined operators <,>,==,!=,...
 
 struct Array3iHasher {
     std::size_t operator()(const std::array<int, 3>& a) const {
@@ -33,7 +36,12 @@ class PointData {
     PointData(const Eigen::Vector3d& xyz, int frame_id) : xyz(xyz), ts_create(frame_id), ts_update(frame_id) {}
 };
 
-using VoxelMap = std::unordered_map<VoxelKey, std::vector<PointData>, Array3iHasher>;
+// using VoxelMap = std::unordered_map<VoxelKey, std::vector<PointData>, Array3iHasher>;
+using VoxelMap = std::unordered_map<VoxelKey, std::vector<PointData>>;  // std::hash<int64_t> is used automatically
+
+struct NeighborOffset {
+    int dx, dy, dz;
+};
 
 class VoxelHashMap {
   private:
@@ -57,16 +65,11 @@ class VoxelHashMap {
     std::vector<double> travel_dist;  // set in dataset, but updated here from main, for purposes of setting local map (empty initially)
 
     // Search Neighborhood
-    std::vector<VoxelKey> neighbor_dx;
+    // std::vector<VoxelKey> neighbor_dx;
+    std::vector<NeighborOffset> neighbor_dx;
 
     // Constructors
     VoxelHashMap(const Config& cfg);
-
-    // Static Methods
-    static VoxelKey PointToVoxel(const Eigen::Vector3d& point, double voxel_size) {
-        return lo::VoxelKey{static_cast<int>(std::floor(point.x() / voxel_size)), static_cast<int>(std::floor(point.y() / voxel_size)),
-                            static_cast<int>(std::floor(point.z() / voxel_size))};
-    }
 
     // Methods
     bool isEmpty() { return (this->vhm.size() == 0); }
